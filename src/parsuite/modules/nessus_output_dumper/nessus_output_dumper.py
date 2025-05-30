@@ -471,7 +471,7 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                         if plugin_outputs and plugin_id in port.plugin_outputs:
 
                             header = socket
-                            if fsocket: header = header+','+fsocket+':'
+                            if 'fsocket' in locals() and fsocket: header = header+','+fsocket+':'
                             ban = '='*header.__len__()
                             header = f'{ban}{header}{ban}'
 
@@ -575,12 +575,13 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                             addr, sport = socket.split(':')
                             if port == sport: outfile.write(addr+'\n')
 
-                    with (fpsplits_dir / '{protocol}_{port}_fqdns.list').open('a') as outfile:
+                    with (fpsplits_dir / f'{protocol}_{port}_fqdns.list').open('a') as outfile:
 
                         for socket in fsockets:
                             addr, sport = socket.split(':')
                             if port == sport: outfile.write(addr+'\n')
 
+    out_dir = Path(bo)
     adinfo_dir = out_dir / 'additional_info'
     adinfo_dir.mkdir(parents=True, exist_ok=True)
 
