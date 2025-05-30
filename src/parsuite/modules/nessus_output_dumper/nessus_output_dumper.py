@@ -420,7 +420,7 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                 # Prepare to handle plugin outputs
                 if plugin_outputs:
 
-                    plugin_outputs_file = (outdir / f'{protocol}_plugin_outputs.txt').open('w')
+                    plugin_outputs_file = (out_dir / f'{protocol}_plugin_outputs.txt').open('w')
 
                 for rhost in rhosts.values():
                     host_ips, host_fqdns = [], []
