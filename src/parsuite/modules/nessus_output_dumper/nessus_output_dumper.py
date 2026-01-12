@@ -183,6 +183,7 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
 
     header = 'Risk       ' \
           'Exploitable    ' \
+          'CISA KEV   ' \
           'Plugin ID   ' \
           'Plugin Name'
 
@@ -268,6 +269,13 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                     else:
                         rf += 'False'
 
+                    rf += '          '
+
+                    if ri.cisa_known_exploited:
+                        rf += colored('Yes','cyan')
+                    else:
+                        rf += 'No '
+
                     rf += '      '
 
                 else:
@@ -281,6 +289,13 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                         rf += 'True '
                     else:
                         rf += 'False'
+
+                    rf += '          '
+
+                    if ri.cisa_known_exploited:
+                        rf += 'Yes'
+                    else:
+                        rf += 'No '
 
                     rf += '      '
 
@@ -375,7 +390,8 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                 'severity': sev,
                 'count': len(rhosts.keys()),
                 'exploitable': exploitable,
-                'exploit_frameworks': fws
+                'exploit_frameworks': fws,
+                'cisa_known_exploited': getattr(ri, 'cisa_known_exploited', None) or 'n/a'
             }
         )
 
@@ -401,6 +417,10 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
         # Write additional info
         with (out_dir / 'additional_info.txt').open('w') as of:
             of.write(ri.additional_info())
+            
+        if ri.cisa_known_exploited:
+            with (out_dir / 'cisa_kev.txt').open('w') as kevfile:
+                kevfile.write(str(ri.cve) + '\n')
 
         # Iterate over each protocol
         # These were captured while collecting plugin ids
@@ -592,7 +612,7 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
 
         rows = [['Risk Factor', 'Plugin ID', 'Count IPs', 'Count Sockets',
             'Count FQDNs', 'Count FQDN Sockets', 'Exploitable',
-            'Exploit Frameworks', 'Plugin Name']]
+            'Exploit Frameworks', 'CISA KEV', 'Plugin Name']]
 
         for k in ['CRITICAL','HIGH','MEDIUM','LOW','NONE']:
 
@@ -612,6 +632,7 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                         dct.get('fqdn_socket_count'),
                         dct.get('exploitable'),
                         dct.get('exploit_frameworks'),
+                        dct.get('cisa_known_exploited'),
                         dct.get('plugin_name'),
                     ])
 

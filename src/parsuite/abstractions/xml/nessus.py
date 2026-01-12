@@ -7,8 +7,8 @@ from copy import copy
 from functools import wraps
 import re
 
-plugin_name_re = pname_re = re.compile('(\s|\W)+')
-ipv4_re = i4_re = re.compile('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
+plugin_name_re = pname_re = re.compile('(\\s|\\W)+')
+ipv4_re = i4_re = re.compile('^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$')
 ipv6_re = i6_re = re.compile('^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$')
 fqdn_re = re.compile('[a-z]', re.I)
 
@@ -140,11 +140,17 @@ class FromXML:
         # Extract text from relevant child tag elements
         for tag in ReportItem.CHILD_TAGS:
             try:
-                text = ri.find(f'{tag}').text
+                if tag == 'cve':
+                    text = '\n'.join([e.text for e in ri.findall('cve')])
+                elif tag == 'cisa-known-exploited':
+                    text = '\n'.join([e.text for e in ri.findall('cisa-known-exploited')])
+                else:
+                    text = ri.find(f'{tag}').text
             except:
                 text = None
 
-            raw[tag] = text
+            key = 'cisa_known_exploited' if tag == 'cisa-known-exploited' else tag
+            raw[key] = text
 
         raw['metasploit_modules'] = [
             ele.text for ele in ri.findall('.//metasploit_name')
@@ -195,7 +201,7 @@ class NessusPort(NH.Port):
         '''report_items is a dictionary of {plugin_id:plugin_output}.
         '''
 
-        plugin_outputs = pluting_outputs if plugin_outputs \
+        plugin_outputs = plugin_outputs if plugin_outputs \
             else PluginOutputDict()
 
         # initialize a list of report items
@@ -330,7 +336,7 @@ class ReportItem(AttrDict):
 
         'age_of_vuln', 'cve', 'cvss3_base_score', 'cvssV3_impactScore',
         'cvss_base_score', 'cvss_score_source', 'cvss_temporal_score',
-        'cvss_temporal_vector', 'cvss_vector', 'msft', 'see_also'
+        'cvss_temporal_vector', 'cvss_vector', 'msft', 'see_also', 'cisa-known-exploited'
     ]
 
     # Normalize XML names that are invalid or undesirable for use as
@@ -353,6 +359,8 @@ class ReportItem(AttrDict):
             NORMALIZED.append(NORMALIZED_MAP[a])
         else:
             NORMALIZED.append(a)
+
+    NORMALIZED.append('cisa_known_exploited')
 
     DICT_ATTRS = NORMALIZED + [
         'plugin_name_slug',
@@ -415,6 +423,7 @@ class ReportItem(AttrDict):
             cvss_vector:str,
             msft:str,
             see_also:str=None,
+            cisa_known_exploited:str=None,
             metasploit_modules=None,
             report_host=None):
 
@@ -450,7 +459,7 @@ class ReportItem(AttrDict):
             if attr == 'port': continue
 
             #attr = RI.normalize_attr(attr)
-            val = locals()[attr]
+            val = locals()['cisa_known_exploited'] if attr == 'cisa-known-exploited' else locals()[attr]
             
             if attr.startswith('exploit_framework') and val:
                 self.exploit_frameworks.append(attr.split('_')[-1])
@@ -462,7 +471,8 @@ class ReportItem(AttrDict):
             elif val == 'false': val = False
 
             # Set the attribute value
-            setattr(self, attr, val)
+            target_attr = 'cisa_known_exploited' if attr == 'cisa-known-exploited' else attr
+            setattr(self, target_attr, val)
 
         self.exploitable = self.exploit_available
 
@@ -646,7 +656,8 @@ class ReportItem(AttrDict):
     
     def additional_info(self):
 
-        output = f'# synopsis\n\n{str(self.__getattribute__("synopsis"))}'
+        output = f'# plugin_id\n\n{self.plugin_id}\n\n'
+        output += f'# synopsis\n\n{str(self.__getattribute__("synopsis"))}'
         for k in ['solution','description', 'plugin_type']:
 
             output += f'\n\n# {k}\n\n{str(self.__getattribute__(k))}'
@@ -660,6 +671,19 @@ class ReportItem(AttrDict):
 
             modules = '\n'.join(self.metasploit_modules)
             output += f'\n\n# msf_modules:\n\n{modules}'
+            
+            
+        # include cisa kev date if present
+        if hasattr(self, 'cisa_known_exploited') and self.cisa_known_exploited:
+            output += f'\n\n# cisa_kev\n\n{self.cisa_known_exploited}'
+
+        # include cve(s) if present
+        if hasattr(self, 'cve') and self.cve:
+            output += f'\n\n# cve\n\n{self.cve}'
+
+        if hasattr(self, 'see_also') and self.see_also:
+            output += '\n\n# see_also\n\n' + '\n'.join(self.see_also)
+
 
         return output+'\n'
 
