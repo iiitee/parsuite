@@ -421,6 +421,12 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
         if ri.cisa_known_exploited:
             with (out_dir / 'cisa_kev.txt').open('w') as kevfile:
                 kevfile.write(str(ri.cve) + '\n')
+        
+        if bool(getattr(ri, 'exploit_available', False)):
+            exploit_code_maturity = getattr(ri, 'exploit_code_maturity', None) or 'n/a'
+ 
+            with (out_dir / 'exploitable.txt').open('w') as ef:
+                ef.write(f"exploit code maturity: {str(exploit_code_maturity).strip()}\n")
 
         # Iterate over each protocol
         # These were captured while collecting plugin ids
@@ -488,10 +494,18 @@ def parse(input_file=None, output_directory=None, plugin_outputs=False,
                                 fsocket = f'{fqdn}:{port.number}'
                                 fsockets.append(fsocket)
 
+                        if port.number == 0:
+
+                            for ip in host_ips:
+                                socket = f'{ip}'
+
+                            for fqdn in host_fqdns:
+                                fsocket = f'{fqdn}'
+
                         if plugin_outputs and plugin_id in port.plugin_outputs:
 
                             header = socket
-                            if 'fsocket' in locals() and fsocket: header = header+','+fsocket+':'
+                            if 'fsocket' in locals() and fsocket: header = header+','+fsocket
                             ban = '='*header.__len__()
                             header = f'{ban}{header}{ban}'
 

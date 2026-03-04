@@ -336,7 +336,7 @@ class ReportItem(AttrDict):
 
         'age_of_vuln', 'cve', 'cvss3_base_score', 'cvssV3_impactScore',
         'cvss_base_score', 'cvss_score_source', 'cvss_temporal_score',
-        'cvss_temporal_vector', 'cvss_vector', 'msft', 'see_also', 'cisa-known-exploited'
+        'cvss_temporal_vector', 'cvss_vector', 'msft', 'see_also', 'cisa-known-exploited', 'exploit_code_maturity'
     ]
 
     # Normalize XML names that are invalid or undesirable for use as
@@ -424,6 +424,7 @@ class ReportItem(AttrDict):
             msft:str,
             see_also:str=None,
             cisa_known_exploited:str=None,
+            exploit_code_maturity:str=None,
             metasploit_modules=None,
             report_host=None):
 
